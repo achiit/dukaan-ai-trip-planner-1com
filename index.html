@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Trip Planner</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mu:#667085;--ac:#2f6bff;--bd:#e3e6ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12141a;--card:#1c2029;--tx:#eef0f5;--mu:#98a2b3;--ac:#6d93ff;--bd:#2c3240}}
+:root[data-theme="dark"]{--bg:#12141a;--card:#1c2029;--tx:#eef0f5;--mu:#98a2b3;--ac:#6d93ff;--bd:#2c3240}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.w{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;margin:8px 0 4px}
+p.s{color:var(--mu);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+label{display:block;font-weight:600;margin:12px 0 6px;font-size:.95rem}
+label small{font-weight:400;color:var(--mu)}
+input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:120px;resize:vertical}
+button,a.btn{display:inline-block;background:var(--ac);color:#fff;border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;text-align:center}
+button.g,a.g{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.row>*{flex:1 1 140px}
+.step{font-size:.8rem;color:var(--ac);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+pre{white-space:pre-wrap;word-wrap:break-word;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;font:.85rem/1.5 ui-monospace,Menlo,monospace;max-height:300px;overflow:auto;margin:10px 0 0}
+#out{white-space:pre-wrap}
+.hide{display:none}
+#chat{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;margin:10px 0}
+.m{padding:9px 12px;border-radius:12px;max-width:88%;white-space:pre-wrap;word-wrap:break-word}
+.m.u{align-self:flex-end;background:var(--ac);color:#fff}
+.m.b{align-self:flex-start;background:var(--bg);border:1px solid var(--bd)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips button{flex:0 0 auto;padding:7px 11px;font-size:.85rem;font-weight:500}
+.cin{display:flex;gap:8px}
+.cin input{flex:1}
+.cin button{flex:0 0 auto}
+.err{color:#d92d20;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>✈️ AI Trip Planner</h1>
+  <p class="s">Details bharo → prompt ban jayega → ChatGPT mein paste karo → jawab wapas paste karo → summary lo.</p>
+
+  <div class="card" id="s1">
+    <div class="step">Step 1 · Trip details</div>
+    <label>City / Country *</label>
+    <input id="city" placeholder="e.g. Jaipur, India">
+    <label>Kitne din? *</label>
+    <input id="days" type="number" min="1" placeholder="e.g. 3">
+    <label>Kaisi jagah pasand hain? * <small>(beaches, markets, forts, temples, museums…)</small></label>
+    <input id="attr" placeholder="e.g. forts, markets, temples">
+    <label>Budget (currency + range per day) *</label>
+    <input id="budget" placeholder="e.g. ₹1000 per day">
+    <label>Tumhara ghar kahan hai? * <small>(city / area)</small></label>
+    <input id="home" placeholder="e.g. Delhi">
+    <label>Travel mode <small>(optional)</small></label>
+    <select id="mode"><option value="">Koi bhi</option><option>Walking</option><option>Auto/Taxi</option><option>Scooter/Bike</option><option>Metro/Public transport</option></select>
+    <label>Dietary specifics <small>(optional)</small></label>
+    <input id="diet" placeholder="e.g. Jain, vegan, egg-free">
+    <div class="row"><button id="gen">Prompt banao →</button></div>
+    <div class="err hide" id="e1"></div>
+  </div>
+
+  <div class="card hide" id="s2">
+    <div class="step">Step 2 · ChatGPT mein bhejo</div>
+    <pre id="prompt"></pre>
+    <div class="row">
+      <button id="copy">📋 Copy prompt</button>
+      <a class="btn g" id="open" target="_blank" rel="noopener">ChatGPT kholo ↗</a>
+    </div>
+    <p class="s" style="margin-top:12px">ChatGPT kholne par prompt apne aap bhar sakta hai; na bhare toh Copy karke paste kar do. Jawab aane ke baad niche Step 3 mein paste karo.</p>
+  </div>
+
+  <div class="card hide" id="s2b">
+    <div class="step">Ghar se safar ka time</div>
+    <div id="trav" class="s" style="color:var(--mu)">Ghar se destination tak kitna time lagega, ye niche button se pata karo.</div>
+    <div class="row"><button id="tbtn">🕒 Safar ka time batao</button></div>
+    <div class="err hide" id="e2"></div>
+  </div>
+
+  <div class="card hide" id="s3">
+    <div class="step">Step 3 · ChatGPT ka jawab paste karo</div>
+    <textarea id="ans" style="min-height:180px" placeholder="Yahan ChatGPT ka poora answer paste karo…"></textarea>
+    <div class="row"><button id="sum">✨ Summary banao</button></div>
+    <div class="err hide" id="e3"></div>
+  </div>
+
+  <div class="card hide" id="s4">
+    <div class="step">Summary</div>
+    <div id="out"></div>
+    <div class="row"><button class="g" id="copysum">📋 Summary copy karo</button></div>
+  </div>
+
+  <div class="card hide" id="s5">
+    <div class="step">💬 Trip Chatbot</div>
+    <p class="s" style="margin:6px 0 10px">Raste mein restaurant, petrol pump, rukne ki jagah ya trip se jura kuch bhi pucho.</p>
+    <div class="chips">
+      <button class="g" data-q="Raste mein achhe veg restaurants ya dhabe hain kya?">Raste mein restaurant?</button>
+      <button class="g" data-q="Raste mein kahan rukna chahiye, koi achhi jagah?">Kahan rukein?</button>
+      <button class="g" data-q="Is trip ke liye kya pack karna chahiye?">Kya pack karein?</button>
+    </div>
+    <div id="chat"></div>
+    <div class="cin"><input id="cq" placeholder="Apna sawal likho…"><button id="csend">Bhejo</button></div>
+    <div class="err hide" id="e5"></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let promptText="";
+function show(id){$(id).classList.remove("hide")}
+$("gen").onclick=()=>{
+  const city=$("city").value.trim(),days=$("days").value.trim(),attr=$("attr").value.trim(),budget=$("budget").value.trim();
+  if(!city||!days||!attr||!budget||!$("home").value.trim()){$("e1").textContent="Pehle saare * wale fields bharo.";show("e1");return}
+  $("e1").classList.add("hide");
+  const home=$("home").value.trim(),mode=$("mode").value,diet=$("diet").value.trim();
+  promptText=`I’m visiting ${city} for ${days} days. I’m interested in seeing places like ${attr}. I’d like to find nearby non veg food + vegetarian food options. My budget is ${budget}. Please provide a detailed day-by-day itinerary with a suggested time schedule, including:
+
+- Recommended places to visit
+- Nearby highly-rated vegetarian restaurants for breakfast, lunch, and dinner
+- Estimated costs for meals and activities
+- Distances in kilometers or meters between each location
+
+Important Guidelines:
+- Ensure that breakfast and dinner locations are within a 1 km range of each other, and close to the day's starting and ending locations.
+- Lunch spots should be conveniently located near the main attractions for the day.
+- All recommended restaurants should have good ratings to guarantee a quality dining experience.
+- Include estimated travel times between locations to ensure an efficient itinerary.`
+  +`\n- My home is in ${home}. Also tell me the approximate travel time (in hours/minutes) from my home to ${city} by road, train and flight.`
+  +(mode?`\n- Preferred travel mode: ${mode}.`:"")
+  +(diet?`\n- Dietary specifics: ${diet}.`:"")
+  +`\n\nAfter giving the itinerary, may I ask you some follow-up questions in English?`;
+  $("prompt").textContent=promptText;
+  $("open").href="https://chatgpt.com/?q="+encodeURIComponent(promptText);
+  show("s2");show("s2b");show("s3");show("s5");hist=[];$("chat").innerHTML="";$("trav").textContent="Ghar se destination tak kitna time lagega, ye niche button se pata karo.";
+  $("s2").scrollIntoView({behavior:"smooth"});
+};
+$("copy").onclick=async()=>{
+  try{await navigator.clipboard.writeText(promptText);$("copy").textContent="✅ Copied!"}
+  catch(e){const r=document.createRange();r.selectNodeContents($("prompt"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("copy").textContent="Text select ho gaya, ab copy karo"}
+  setTimeout(()=>$("copy").textContent="📋 Copy prompt",2500);
+};
+$("tbtn").onclick=async()=>{
+  const sample=await claude.use("sample");
+  if(!sample){$("e2").textContent="Ye feature yahan available nahi hai. Page ko claude.ai mein kholo.";show("e2");return}
+  $("e2").classList.add("hide");
+  $("tbtn").disabled=true;$("tbtn").textContent="Hisaab lag raha hai…";
+  try{
+    const r=await sample(`Ghar: ${$("home").value.trim()}. Destination: ${$("city").value.trim()}. In dono ke beech ka approximate safar time simple Hinglish mein batao. Format (plain text, markdown nahi):\n🚗 Road: ~X ghante Y minute (aur lagbhag Z km)\n🚆 Train: ~X ghante Y minute\n✈️ Flight: ~X ghante Y minute (airport tak ka time alag)\nLast mein 1 line: "Ye andaza hai, traffic/schedule se badal sakta hai." Agar koi option possible nahi hai (jaise samudra ke paar road), toh likho "Available nahi".`,{onText:({text})=>{$("trav").textContent=text;$("trav").style.whiteSpace="pre-wrap";$("trav").style.color="var(--tx)"}});
+    $("trav").textContent=r.text;
+  }catch(e){$("e2").textContent="Time nahi nikal paaya ("+(e&&e.code||"error")+"). Dobara try karo.";show("e2")}
+  $("tbtn").disabled=false;$("tbtn").textContent="🕒 Safar ka time batao";
+};
+$("sum").onclick=async()=>{
+  const a=$("ans").value.trim();
+  if(a.length<50){$("e3").textContent="Pehle ChatGPT ka poora jawab paste karo.";show("e3");return}
+  $("e3").classList.add("hide");
+  const sample=await claude.use("sample");
+  if(!sample){$("e3").textContent="Summary feature yahan available nahi hai. Page ko claude.ai mein khol kar try karo.";show("e3");return}
+  $("sum").disabled=true;$("sum").textContent="Summary ban rahi hai…";
+  show("s4");$("out").textContent="Thinking…";
+  try{
+    const r=await sample(`Neeche ek trip itinerary hai (ChatGPT ne banayi). Isko simple Hinglish (Hindi in Roman script) mein summarize karo. Format:
+- Har din ke liye 1-2 line: kahan ghoomna hai + timing
+- Har din ke restaurants (breakfast/lunch/dinner) ke naam
+- Total estimated kharcha per day
+- Last mein 3 important tips
+Plain text rakho, markdown symbols (#, **) mat use karo; sirf emojis aur "-" bullets.
+
+ITINERARY:
+${a}`,{onText:({text})=>{$("out").textContent=text}});
+    $("out").textContent=r.text;
+  }catch(e){
+    $("out").textContent="";$("e3").textContent="Summary nahi ban payi ("+(e&&e.code||"error")+"). Dobara try karo.";show("e3");
+  }
+  $("sum").disabled=false;$("sum").textContent="✨ Summary banao";
+};
+let hist=[],busy=false;
+function bubble(cls,t){const d=document.createElement("div");d.className="m "+cls;d.textContent=t;$("chat").appendChild(d);$("chat").scrollTop=$("chat").scrollHeight;return d}
+async function ask(q){
+  if(busy||!q.trim())return;
+  const sample=await claude.use("sample");
+  if(!sample){$("e5").textContent="Chatbot yahan available nahi hai. Page ko claude.ai mein kholo.";show("e5");return}
+  $("e5").classList.add("hide");busy=true;$("csend").disabled=true;
+  bubble("u",q);hist.push({role:"user",content:q});
+  const b=bubble("b","…");
+  const ctx=`Tum ek helpful trip assistant ho. Simple Hinglish (Roman script) mein chhote, kaam ke jawab do, plain text, markdown (#, **) nahi. Trip details: ghar = ${$("home").value.trim()}; destination = ${$("city").value.trim()}; din = ${$("days").value.trim()}; pasand = ${$("attr").value.trim()}; budget = ${$("budget").value.trim()}; travel mode = ${$("mode").value||"koi bhi"}; dietary = ${$("diet").value.trim()||"koi nahi"}. Raste ke restaurants/jagah ke baare mein jo naam batao, wo general jaankari par based ho; live rating ya khula/band hone ki guarantee nahi, toh user ko Google Maps par confirm karne ko bolo.`;
+  const msgs=[{role:"user",content:ctx+"\n\nPehla sawal: "+hist[0].content}];
+  for(let i=1;i<hist.length;i++)msgs.push(hist[i]);
+  try{
+    const r=await sample(msgs.length===1?msgs[0].content:msgs,{cache:false,onText:({text})=>{b.textContent=text;$("chat").scrollTop=$("chat").scrollHeight}});
+    b.textContent=r.text;hist.push({role:"assistant",content:r.text});
+  }catch(e){b.remove();hist.pop();$("e5").textContent="Jawab nahi aa paya ("+(e&&e.code||"error")+"). Dobara try karo.";show("e5")}
+  busy=false;$("csend").disabled=false;
+}
+$("csend").onclick=()=>{const v=$("cq").value;$("cq").value="";ask(v)};
+$("cq").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("csend").click()}};
+document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>ask(b.dataset.q));
+$("copysum").onclick=async()=>{
+  try{await navigator.clipboard.writeText($("out").textContent);$("copysum").textContent="✅ Copied!"}catch(e){}
+  setTimeout(()=>$("copysum").textContent="📋 Summary copy karo",2500);
+};
+</script>
+</body>
+</html>
